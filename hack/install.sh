@@ -46,6 +46,32 @@ else
   TAG="latest"
 fi
 
+# Compare version numbers (returns true if first >= second)
+version_ge() {
+  # Remove 'v' prefix if present
+  v1=$(echo "$1" | sed 's/^v//')
+  v2=$(echo "$2" | sed 's/^v//')
+  
+  # Compare using sort -V: if v1 >= v2, then v2 should be first in sorted order (or equal)
+  first=$(printf '%s\n%s\n' "$v1" "$v2" | sort -V | head -n1)
+  [ "$first" = "$v2" ] || [ "$v1" = "$v2" ]
+}
+
+# Repository name is always cozyhr
+REPO_NAME="cozystack/cozyhr"
+
+# Determine binary name based on version
+if [ "$TAG" = "latest" ]; then
+  # Latest always uses new name
+  BINARY_NAME="cozyhr"
+elif version_ge "$VERSION" "1.5.0"; then
+  # Version >= 1.5.0 uses new name
+  BINARY_NAME="cozyhr"
+else
+  # Version < 1.5.0 uses old name
+  BINARY_NAME="cozypkg"
+fi
+
 # ----------------------
 # Prerequisite commands
 # ----------------------
@@ -72,20 +98,20 @@ case "$ARCH" in
   *) error "Unsupported architecture: $ARCH" ;;
 esac
 
-TAR_FILE="cozypkg-$OS-$ARCH.tar.gz"
-CHECKSUM_FILE="cozypkg-checksums.txt"
+TAR_FILE="$BINARY_NAME-$OS-$ARCH.tar.gz"
+CHECKSUM_FILE="$BINARY_NAME-checksums.txt"
 
 if [ "$TAG" = "latest" ]; then
-  BASE_URL="https://github.com/cozystack/cozypkg/releases/latest/download"
+  BASE_URL="https://github.com/$REPO_NAME/releases/latest/download"
 else
-  BASE_URL="https://github.com/cozystack/cozypkg/releases/download/$TAG"
+  BASE_URL="https://github.com/$REPO_NAME/releases/download/$TAG"
 fi
 
 TMPDIR=$(mktemp -d)
 cleanup() { rm -rf "$TMPDIR"; }
 trap cleanup EXIT INT TERM
 
-info "Installing cozypkg version: $TAG"
+info "Installing $BINARY_NAME version: $TAG"
 info "Downloading $TAR_FILE..."
 download "$TMPDIR/$TAR_FILE" "$BASE_URL/$TAR_FILE" || error "Failed to download $TAR_FILE"
 
@@ -106,9 +132,9 @@ success "Checksum verified."
 info "Extracting..."
 tar -xzf "$TMPDIR/$TAR_FILE" -C "$TMPDIR"
 
-[ -f "$TMPDIR/cozypkg" ] || error "Binary 'cozypkg' not found in archive."
+[ -f "$TMPDIR/$BINARY_NAME" ] || error "Binary '$BINARY_NAME' not found in archive."
 
-chmod +x "$TMPDIR/cozypkg"
+chmod +x "$TMPDIR/$BINARY_NAME"
 
 # Determine install dir
 if [ "$(id -u)" = "0" ] || [ -w "/usr/local/bin" ]; then
@@ -122,9 +148,9 @@ else
   esac
 fi
 
-INSTALL_PATH="$INSTALL_DIR/cozypkg"
+INSTALL_PATH="$INSTALL_DIR/$BINARY_NAME"
 
-mv "$TMPDIR/cozypkg" "$INSTALL_PATH"
+mv "$TMPDIR/$BINARY_NAME" "$INSTALL_PATH"
 
-success "cozypkg installed successfully at $INSTALL_PATH"
-info "Run 'cozypkg --help' to get started."
+success "$BINARY_NAME installed successfully at $INSTALL_PATH"
+info "Run '$BINARY_NAME --help' to get started."
