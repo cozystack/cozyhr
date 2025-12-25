@@ -69,7 +69,7 @@ var (
 	ns          string
 	chDir       string
 	plain       bool     // render without talking to the API server
-	showOnly    []string // template globs for `cozypkg show`
+	showOnly    []string // template globs for `cozyhr show`
 	extraVals   []string // additional -f/--values files
 )
 
@@ -84,7 +84,7 @@ func main() {
 	log.SetFlags(0)
 
 	root := &cobra.Command{
-		Use:     "cozypkg",
+		Use:     "cozyhr",
 		Short:   "Cozy wrapper around Helm and Flux CD for local development",
 		Version: Version,
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
@@ -96,7 +96,7 @@ func main() {
 			}
 		},
 	}
-	root.SetVersionTemplate("cozypkg version {{.Version}}\n")
+	root.SetVersionTemplate("cozyhr version {{.Version}}\n")
 
 	root.PersistentFlags().StringVar(&kubeconfig, "kubeconfig", "", "Path to kubeconfig")
 	root.PersistentFlags().StringVar(&kubecontext, "context", "", "Kube context")
@@ -122,7 +122,7 @@ func main() {
 		Use:   "version",
 		Short: "Print version",
 		Run: func(_ *cobra.Command, _ []string) {
-			fmt.Println("cozypkg", Version)
+			fmt.Println("cozyhr", Version)
 		},
 	})
 
@@ -391,7 +391,7 @@ func mergedValues(ctx context.Context, cl client.Client, hr *v2.HelmRelease, cha
 
 	// First, try to get valuesFiles from annotation (set by operator)
 	if ann := hr.GetAnnotations(); ann != nil {
-		if vfStr, ok := ann["cozypkg.cozystack.io/values-files"]; ok {
+		if vfStr, ok := ann["cozyhr.cozystack.io/values-files"]; ok {
 			// Format: comma-separated string, e.g., "values.yaml,values-cilium.yaml"
 			if vfStr != "" {
 				valuesFiles = strings.Split(vfStr, ",")
@@ -641,7 +641,7 @@ func cmdFactory(name string, fn runFn) *cobra.Command {
 	return cmd
 }
 
-// cmdShow returns the `cozypkg show` command.
+// cmdShow returns the `cozyhr show` command.
 func cmdShow() *cobra.Command {
 	cmd := cmdFactory("show", func(ctx context.Context, cl client.Client, cfg *helmaction.Configuration, hr *v2.HelmRelease, chartDir string) error {
 		var vals map[string]interface{}
@@ -709,7 +709,7 @@ func cmdShow() *cobra.Command {
 	return cmd
 }
 
-// cmdApply returns the `cozypkg apply` command.
+// cmdApply returns the `cozyhr apply` command.
 func cmdApply() *cobra.Command {
 	var autoResume bool
 	var takeOwnership bool
@@ -720,7 +720,7 @@ func cmdApply() *cobra.Command {
 
 		bc := record.NewBroadcaster()
 		defer bc.Shutdown()
-		rec := bc.NewRecorder(clientsetscheme.Scheme, corev1.EventSource{Component: "cozypkg"})
+		rec := bc.NewRecorder(clientsetscheme.Scheme, corev1.EventSource{Component: "cozyhr"})
 		vals := map[string]interface{}{}
 
 		if !plain {
@@ -783,7 +783,7 @@ func cmdApply() *cobra.Command {
 	return cmd
 }
 
-// cmdDiff returns the `cozypkg diff` command.
+// cmdDiff returns the `cozyhr diff` command.
 func cmdDiff() *cobra.Command {
 	cmd := cmdFactory("diff", func(ctx context.Context, cl client.Client, cfg *helmaction.Configuration, hr *v2.HelmRelease, chartDir string) error {
 		var vals map[string]interface{}
@@ -817,7 +817,7 @@ func cmdDiff() *cobra.Command {
 	return cmd
 }
 
-// cmdSuspend returns the `cozypkg suspend` command.
+// cmdSuspend returns the `cozyhr suspend` command.
 func cmdSuspend() *cobra.Command {
 	cmd := cmdFactory("suspend", func(ctx context.Context, cl client.Client, _ *helmaction.Configuration, hr *v2.HelmRelease, _ string) error {
 		return patchSuspend(ctx, cl, hr.Namespace, hr.Name, pointer.Bool(true))
@@ -826,7 +826,7 @@ func cmdSuspend() *cobra.Command {
 	return cmd
 }
 
-// cmdResume returns the `cozypkg resume` command.
+// cmdResume returns the `cozyhr resume` command.
 func cmdResume() *cobra.Command {
 	cmd := cmdFactory("resume", func(ctx context.Context, cl client.Client, _ *helmaction.Configuration, hr *v2.HelmRelease, _ string) error {
 		return patchSuspend(ctx, cl, hr.Namespace, hr.Name, nil)
@@ -835,7 +835,7 @@ func cmdResume() *cobra.Command {
 	return cmd
 }
 
-// cmdDelete returns the `cozypkg delete` command.
+// cmdDelete returns the `cozyhr delete` command.
 func cmdDelete() *cobra.Command {
 	cmd := cmdFactory("delete", func(_ context.Context, _ client.Client, cfg *helmaction.Configuration, hr *v2.HelmRelease, _ string) error {
 		un := helmaction.NewUninstall(cfg)
@@ -1072,7 +1072,7 @@ func collectHR(
 	return ulist, nil
 }
 
-// cmdGet exposes `cozypkg get`.
+// cmdGet exposes `cozyhr get`.
 func cmdGet() *cobra.Command {
 	var (
 		allNS  bool
@@ -1092,7 +1092,7 @@ func cmdGet() *cobra.Command {
 	return cmd
 }
 
-// cmdList exposes `cozypkg list` (alias: ls).
+// cmdList exposes `cozyhr list` (alias: ls).
 func cmdList() *cobra.Command {
 	var (
 		allNS  bool
@@ -1306,7 +1306,7 @@ func completeHelmReleases(cmd *cobra.Command, args []string, toComplete string) 
 	return out, cobra.ShellCompDirectiveNoFileComp
 }
 
-// cmdReconcile returns the `cozypkg reconcile` command.
+// cmdReconcile returns the `cozyhr reconcile` command.
 func cmdReconcile() *cobra.Command {
 	var (
 		withSource bool

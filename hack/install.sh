@@ -72,20 +72,20 @@ case "$ARCH" in
   *) error "Unsupported architecture: $ARCH" ;;
 esac
 
-TAR_FILE="cozypkg-$OS-$ARCH.tar.gz"
-CHECKSUM_FILE="cozypkg-checksums.txt"
+TAR_FILE="cozyhr-$OS-$ARCH.tar.gz"
+CHECKSUM_FILE="cozyhr-checksums.txt"
 
 if [ "$TAG" = "latest" ]; then
-  BASE_URL="https://github.com/cozystack/cozypkg/releases/latest/download"
+  BASE_URL="https://github.com/cozystack/cozyhr/releases/latest/download"
 else
-  BASE_URL="https://github.com/cozystack/cozypkg/releases/download/$TAG"
+  BASE_URL="https://github.com/cozystack/cozyhr/releases/download/$TAG"
 fi
 
 TMPDIR=$(mktemp -d)
 cleanup() { rm -rf "$TMPDIR"; }
 trap cleanup EXIT INT TERM
 
-info "Installing cozypkg version: $TAG"
+info "Installing cozyhr version: $TAG"
 info "Downloading $TAR_FILE..."
 download "$TMPDIR/$TAR_FILE" "$BASE_URL/$TAR_FILE" || error "Failed to download $TAR_FILE"
 
@@ -106,9 +106,9 @@ success "Checksum verified."
 info "Extracting..."
 tar -xzf "$TMPDIR/$TAR_FILE" -C "$TMPDIR"
 
-[ -f "$TMPDIR/cozypkg" ] || error "Binary 'cozypkg' not found in archive."
+[ -f "$TMPDIR/cozyhr" ] || error "Binary 'cozyhr' not found in archive."
 
-chmod +x "$TMPDIR/cozypkg"
+chmod +x "$TMPDIR/cozyhr"
 
 # Determine install dir
 if [ "$(id -u)" = "0" ] || [ -w "/usr/local/bin" ]; then
@@ -122,9 +122,9 @@ else
   esac
 fi
 
-INSTALL_PATH="$INSTALL_DIR/cozypkg"
+INSTALL_PATH="$INSTALL_DIR/cozyhr"
 
-mv "$TMPDIR/cozypkg" "$INSTALL_PATH"
+mv "$TMPDIR/cozyhr" "$INSTALL_PATH"
 
-success "cozypkg installed successfully at $INSTALL_PATH"
-info "Run 'cozypkg --help' to get started."
+success "cozyhr installed successfully at $INSTALL_PATH"
+info "Run 'cozyhr --help' to get started."

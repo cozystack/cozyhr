@@ -1,4 +1,4 @@
-module github.com/cozystack/cozypkg
+module github.com/cozystack/cozyhr
 
 go 1.25.0
 

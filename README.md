@@ -1,17 +1,19 @@
-# cozypkg
+# cozyhr
+
+> **Note:** This project was formerly known as `cozypkg`.
 
 Cozy wrapper around Helm and Flux CD for local development
 
 ## Usage
 
-**cozypkg** assumes that you run it from the local directory that contains your Helm chart.  
+**cozyhr** assumes that you run it from the local directory that contains your Helm chart.  
 All relative paths and operations are resolved against this working directory.
 
 ```
 Cozy wrapper around Helm and Flux CD for local development
 
 Usage:
-  cozypkg [command]
+  cozyhr [command]
 
 Available Commands:
   apply       Upgrade or install HelmRelease and sync status
@@ -28,19 +30,19 @@ Available Commands:
   version     Print version
 
 Flags:
-  -h, --help                help for cozypkg
+  -h, --help                help for cozyhr
       --kubeconfig string   Path to kubeconfig
   -n, --namespace string    Kubernetes namespace (defaults to the current context)
-  -v, --version             version for cozypkg
+  -v, --version             version for cozyhr
 
-Use "cozypkg [command] --help" for more information about a command.
+Use "cozyhr [command] --help" for more information about a command.
 ```
 
 ## Installation
 
-Download binary from Github [releases page](https://github.com/cozystack/cozypkg/releases/latest)
+Download binary from Github [releases page](https://github.com/cozystack/cozyhr/releases/latest)
 
 Or use simple script to install it:
 ```bash
-curl -sSL https://github.com/cozystack/cozypkg/raw/refs/heads/main/hack/install.sh | sh -s
+curl -sSL https://github.com/cozystack/cozyhr/raw/refs/heads/main/hack/install.sh | sh -s
 ```
