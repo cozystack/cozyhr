@@ -58,6 +58,7 @@ import (
 	hchart "helm.sh/helm/v3/pkg/chartutil"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
+	"github.com/go-logr/logr"
 )
 
 // Global CLI flags.
@@ -383,7 +384,7 @@ func getChartInfo(chartDir string) (chartName, chartVersion string, err error) {
 	return chartMeta.Name, chartMeta.Version, nil
 }
 
-// mergedValues merges valuesFiles and inline .spec.values in the given HelmRelease.
+// mergedValues merges valuesFiles, valuesFrom references, and inline .spec.values in the given HelmRelease.
 func mergedValues(ctx context.Context, cl client.Client, hr *v2.HelmRelease, chartDir string) (map[string]interface{}, error) {
 	vals := map[string]interface{}{}
 
@@ -435,6 +436,26 @@ func mergedValues(ctx context.Context, cl client.Client, hr *v2.HelmRelease, cha
 		if err := mergo.Merge(&vals, mv, mergo.WithOverride); err != nil {
 			return nil, err
 		}
+	}
+
+	// Merge valuesFrom references (ConfigMaps and Secrets)
+	if len(hr.Spec.ValuesFrom) > 0 {
+		// Create a discard logger since we don't need logging in CLI tool
+		logger := logr.Discard()
+
+		// Use flux chartutil to merge values from ConfigMaps and Secrets
+		mergedVals, err := fluxchartutil.ChartValuesFromReferences(
+			ctx,
+			logger,
+			cl,
+			hr.Namespace,
+			vals,
+			hr.Spec.ValuesFrom...,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to merge values from references: %w", err)
+		}
+		vals = mergedVals
 	}
 
 	return vals, nil
