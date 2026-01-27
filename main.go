@@ -1135,17 +1135,17 @@ func cmdList() *cobra.Command {
 }
 
 // newHistoryEntry creates a v2.Snapshot for status.history.
-func newHistoryEntry(hr *v2.HelmRelease, chartVersion, cfgDigest string, chartDir string) *v2.Snapshot {
-	chartName, _, err := getChartInfo(chartDir)
-	if err != nil {
-		// Log the error and fall back to the HelmRelease name.
-		log.Printf("could not get chart info for %s/%s: %v", hr.Namespace, hr.Name, err)
-		chartName = hr.Name
+func newHistoryEntry(hr *v2.HelmRelease, chartName, chartVersion, cfgDigest string) *v2.Snapshot {
+	// Determine the next release version from existing history
+	version := 1
+	if latest := hr.Status.History.Latest(); latest != nil {
+		version = latest.Version + 1
 	}
+
 	return &v2.Snapshot{
-		Name:          chartName,
-		Namespace:     hr.Namespace,
-		Version:       1,
+		Name:          hr.GetReleaseName(), // Must match spec.releaseName (or metadata.name if not set)
+		Namespace:     hr.GetReleaseNamespace(),
+		Version:       version,
 		ChartName:     chartName,
 		ChartVersion:  chartVersion,
 		ConfigDigest:  cfgDigest,
@@ -1168,7 +1168,8 @@ func markSuccess(ctx context.Context, cl client.Client, rec record.EventRecorder
 	conditions.MarkTrue(hr, v2.ReleasedCondition, v2.UpgradeSucceededReason, msg)
 	conditions.MarkTrue(hr, fluxmeta.ReadyCondition, v2.UpgradeSucceededReason, msg)
 
-	hr.Status.History = append(hr.Status.History, newHistoryEntry(hr, chartVer, cfgDigest, chartDir))
+	// Prepend to history - Flux's History.Latest() returns the first element
+	hr.Status.History = append(v2.Snapshots{newHistoryEntry(hr, chartName, chartVer, cfgDigest)}, hr.Status.History...)
 	hr.Status.Failures = 0
 	hr.Status.ObservedGeneration = hr.Generation
 	_ = cl.Status().Update(ctx, hr)
