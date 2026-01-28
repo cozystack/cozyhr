@@ -40,6 +40,14 @@ Use "cozyhr [command] --help" for more information about a command.
 
 ## Installation
 
+### Homebrew (macOS and Linux)
+
+```bash
+brew install cozyhr
+```
+
+### Manual Installation
+
 Download binary from Github [releases page](https://github.com/cozystack/cozyhr/releases/latest)
 
 Or use simple script to install it:
