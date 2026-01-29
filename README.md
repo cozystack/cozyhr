@@ -47,6 +47,8 @@ brew tap cozystack/tap
 brew install cozyhr
 ```
 
+> **Note**: This uses our [incubating tap](https://github.com/cozystack/homebrew-tap). The formula will be submitted to official homebrew/core once it reaches 75+ stars and stable adoption.
+
 ### Manual Installation
 
 Download binary from Github [releases page](https://github.com/cozystack/cozyhr/releases/latest)
