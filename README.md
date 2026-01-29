@@ -43,6 +43,7 @@ Use "cozyhr [command] --help" for more information about a command.
 ### Homebrew (macOS and Linux)
 
 ```bash
+brew tap cozystack/tap
 brew install cozyhr
 ```
 
