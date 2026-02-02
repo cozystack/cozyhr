@@ -96,14 +96,7 @@ fi
 OS=$(uname -s | tr '[:upper:]' '[:lower:]')
 
 # Detect architecture: respect TARGETARCH (Docker buildx) or ARCH env vars, fallback to uname -m
-if [ -n "$TARGETARCH" ]; then
-  ARCH="$TARGETARCH"
-elif [ -n "$ARCH" ]; then
-  # ARCH already set by environment
-  :
-else
-  ARCH=$(uname -m)
-fi
+ARCH=${TARGETARCH:-${ARCH:-$(uname -m)}}
 
 case "$ARCH" in
   x86_64|amd64) ARCH="amd64" ;;
