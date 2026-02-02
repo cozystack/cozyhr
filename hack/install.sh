@@ -18,6 +18,11 @@ Usage: $0 [OPTIONS]
 Options:
   -v, --version VERSION   Install specific release (e.g. 1.4.0 or v1.4.0).
   -h, --help              Show this help and exit.
+
+Environment variables:
+  TARGETARCH              Override architecture detection (e.g. amd64, arm64).
+                          Useful for Docker buildx cross-compilation.
+  ARCH                    Alternative to TARGETARCH for architecture override.
 EOF
 }
 
@@ -89,7 +94,16 @@ else
 fi
 
 OS=$(uname -s | tr '[:upper:]' '[:lower:]')
-ARCH=$(uname -m)
+
+# Detect architecture: respect TARGETARCH (Docker buildx) or ARCH env vars, fallback to uname -m
+if [ -n "$TARGETARCH" ]; then
+  ARCH="$TARGETARCH"
+elif [ -n "$ARCH" ]; then
+  # ARCH already set by environment
+  :
+else
+  ARCH=$(uname -m)
+fi
 
 case "$ARCH" in
   x86_64|amd64) ARCH="amd64" ;;
