@@ -6,7 +6,7 @@ Cozy wrapper around Helm and Flux CD for local development
 
 ## Usage
 
-**cozyhr** assumes that you run it from the local directory that contains your Helm chart.  
+**cozyhr** assumes that you run it from the local directory that contains your Helm chart.
 All relative paths and operations are resolved against this working directory.
 
 ```
@@ -43,11 +43,8 @@ Use "cozyhr [command] --help" for more information about a command.
 ### Homebrew (macOS and Linux)
 
 ```bash
-brew tap cozystack/tap
 brew install cozyhr
 ```
-
-> **Note**: This uses our [incubating tap](https://github.com/cozystack/homebrew-tap). The formula will be submitted to official homebrew/core once it reaches 75+ stars and stable adoption.
 
 ### Manual Installation
 
