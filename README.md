@@ -23,17 +23,19 @@ Available Commands:
   get         Get one or many HelmReleases
   help        Help about any command
   list        List HelmReleases
-  reconcile   Trigger HelmRelease reconciliation (optionally its HelmChart)
+  reconcile   Trigger HelmRelease reconciliation
   resume      Resume Flux HelmRelease
   show        Render manifests like helm template
   suspend     Suspend Flux HelmRelease
   version     Print version
 
 Flags:
-  -h, --help                help for cozyhr
-      --kubeconfig string   Path to kubeconfig
-  -n, --namespace string    Kubernetes namespace (defaults to the current context)
-  -v, --version             version for cozyhr
+      --context string             Kube context
+  -h, --help                       help for cozyhr
+      --kubeconfig string          Path to kubeconfig
+  -n, --namespace string           Kubernetes namespace (defaults to the current context)
+  -v, --version                    version for cozyhr
+  -C, --working-directory string   Root directory of Helm chart to run against (defaults to current directory)
 
 Use "cozyhr [command] --help" for more information about a command.
 ```
