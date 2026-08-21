@@ -1,0 +1,10 @@
+apiVersion: operator.victoriametrics.com/v1beta1
+kind: VMAlert
+metadata:
+  name: monitoring
+  namespace: cozy-monitoring
+spec:
+  datasource:
+    url: http://vmsingle-monitoring.cozy-monitoring.svc:8429
+  notifiers:
+  - url: http://vmalertmanager-monitoring.cozy-monitoring.svc:9093

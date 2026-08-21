@@ -1,0 +1,12 @@
+# Source: monitoring/templates/blackbox.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: monitoring-blackbox
+  namespace: cozy-monitoring
+data:
+  blackbox.yml: |
+    modules:
+      https_2xx:
+        prober: http
+        timeout: 10s

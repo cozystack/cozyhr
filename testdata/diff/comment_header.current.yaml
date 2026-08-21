@@ -1,0 +1,16 @@
+apiVersion: operator.victoriametrics.com/v1beta1
+kind: VMNodeScrape
+metadata:
+  labels:
+    cozyportal.cozystack.io/monitoring: "true"
+    helm.toolkit.fluxcd.io/name: portal-monitoring
+    helm.toolkit.fluxcd.io/namespace: cozy-monitoring
+  name: cadvisor
+  namespace: cozy-monitoring
+spec:
+  bearerTokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token
+  path: /metrics/cadvisor
+  port: "10250"
+  scheme: https
+  tlsConfig:
+    insecureSkipVerify: true

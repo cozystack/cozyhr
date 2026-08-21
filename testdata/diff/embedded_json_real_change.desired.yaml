@@ -1,0 +1,13 @@
+# Source: monitoring/templates/grafana-dashboards.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: monitoring-grafana-dashboards
+  namespace: cozy-monitoring
+data:
+  portal-alerts.json: |
+    {
+     "uid": "portal-alerts",
+     "schemaVersion": 39,
+     "refresh": "10s"
+    }

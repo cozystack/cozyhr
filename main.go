@@ -47,6 +47,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	sigsyaml "sigs.k8s.io/yaml"
 
+	"gopkg.in/yaml.v2"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
@@ -539,8 +541,6 @@ func upgradeRelease(cfg *helmaction.Configuration, hr *v2.HelmRelease, chartDir 
 
 // realHelmDiff returns a textual diff between the live release and desired state.
 func realHelmDiff(cfg *helmaction.Configuration, hr *v2.HelmRelease, chartDir string, vals map[string]interface{}) (string, error) {
-	var buf bytes.Buffer
-
 	get := helmaction.NewGet(cfg)
 	rel, err := get.Run(hr.Name)
 	var current []byte
@@ -582,11 +582,108 @@ func realHelmDiff(cfg *helmaction.Configuration, hr *v2.HelmRelease, chartDir st
 	}
 	desired := []byte(dry.Manifest)
 
-	curSpecs := manifest.Parse(string(current), hr.Namespace, false, manifest.Helm3TestHook, manifest.Helm2TestSuccessHook)
-	newSpecs := manifest.Parse(string(desired), hr.Namespace, false, manifest.Helm3TestHook, manifest.Helm2TestSuccessHook)
+	return diffManifests(current, desired, hr.Namespace)
+}
+
+// diffManifests computes a canonicalized textual diff between two Helm
+// manifest bundles (raw multi-document YAML text), keyed and grouped the
+// same way Helm itself does. Both sides are parsed and re-serialized
+// through the same normalization path before diffing, so that manifests
+// which differ only in serialization details - not in the data they
+// encode - produce no diff output.
+func diffManifests(current, desired []byte, namespace string) (string, error) {
+	var buf bytes.Buffer
+
+	curSpecs := manifest.Parse(string(current), namespace, true, manifest.Helm3TestHook, manifest.Helm2TestSuccessHook)
+	newSpecs := manifest.Parse(string(desired), namespace, true, manifest.Helm3TestHook, manifest.Helm2TestSuccessHook)
+
+	canonicalizeSpecs(curSpecs)
+	canonicalizeSpecs(newSpecs)
 
 	_ = diff.Manifests(curSpecs, newSpecs, &diff.Options{OutputContext: -1, ShowSecrets: true}, &buf)
 	return buf.String(), nil
+}
+
+// canonicalizeSpecs re-serializes each manifest's Content through a YAML
+// round-trip that also normalizes leaf string scalars, so that pairs of
+// manifests differing only in serialization details (not in the data they
+// encode) produce byte-identical Content and are not reported as changed.
+// manifest.Parse's own normalizeManifests flag already strips comments and
+// picks a consistent YAML style (fixing Helm's "# Source:" headers and
+// block-scalar folding/wrapping), but it leaves leaf string values as-is;
+// this pass additionally trims a trailing newline difference (the sole
+// cause of "|" vs "|-" block-scalar chomping noise) and, where a string
+// scalar happens to hold embedded JSON (e.g. a dashboard definition stored
+// in a ConfigMap), re-serializes that JSON with consistent whitespace.
+func canonicalizeSpecs(specs map[string]*manifest.MappingResult) {
+	for _, m := range specs {
+		m.Content = canonicalizeYAML(m.Content)
+	}
+}
+
+func canonicalizeYAML(content string) string {
+	var obj interface{}
+	if err := yaml.Unmarshal([]byte(content), &obj); err != nil {
+		return content
+	}
+	out, err := yaml.Marshal(canonicalizeYAMLValue(obj))
+	if err != nil {
+		return content
+	}
+	return string(out)
+}
+
+func canonicalizeYAMLValue(v interface{}) interface{} {
+	switch t := v.(type) {
+	case map[interface{}]interface{}:
+		for k, val := range t {
+			t[k] = canonicalizeYAMLValue(val)
+		}
+		return t
+	case []interface{}:
+		for i, val := range t {
+			t[i] = canonicalizeYAMLValue(val)
+		}
+		return t
+	case string:
+		return canonicalizeStringValue(t)
+	default:
+		return v
+	}
+}
+
+// canonicalizeStringValue trims a trailing-newline-only difference (the
+// YAML block-scalar chomping indicator, "|" vs "|-", carries no other
+// information) and, if the trimmed string is itself a JSON document,
+// replaces it with a compact re-encoding so indentation-only differences
+// in embedded JSON (e.g. Grafana dashboards) don't show up as noise.
+func canonicalizeStringValue(s string) string {
+	trimmed := strings.TrimRight(s, "\n")
+	if canon, ok := canonicalizeJSONString(trimmed); ok {
+		return canon
+	}
+	return trimmed
+}
+
+func canonicalizeJSONString(s string) (string, bool) {
+	trimmed := strings.TrimSpace(s)
+	if len(trimmed) == 0 || (trimmed[0] != '{' && trimmed[0] != '[') {
+		return "", false
+	}
+	dec := json.NewDecoder(strings.NewReader(s))
+	var v interface{}
+	if err := dec.Decode(&v); err != nil {
+		return "", false
+	}
+	// Reject trailing content after the JSON value: not a pure-JSON string.
+	if dec.More() {
+		return "", false
+	}
+	out, err := json.Marshal(v)
+	if err != nil {
+		return "", false
+	}
+	return string(out), true
 }
 
 // runFn is a helper signature passed to cmdFactory.
