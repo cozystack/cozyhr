@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: monitoring-grafana-dashboards
+  namespace: cozy-monitoring
+data:
+  portal-alerts.json: |-
+    {"uid":"portal-alerts","title":"Alerts and probes","schemaVersion":39,"tags":["portal"]}

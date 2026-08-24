@@ -1,0 +1,16 @@
+apiVersion: operator.victoriametrics.com/v1beta1
+kind: VMRule
+metadata:
+  name: monitoring-controllers
+  namespace: cozy-monitoring
+spec:
+  groups:
+  - name: controllers
+    rules:
+    - alert: DashboardNginxDown
+      expr: kube_deployment_status_replicas_available{namespace="cozy-dashboard",
+        deployment="dashboard-nginx"} < kube_deployment_spec_replicas{namespace="cozy-dashboard",
+        deployment="dashboard-nginx"}
+      annotations:
+        summary: cozy-dashboard/dashboard-nginx недоступен — критичный компонент
+          портала

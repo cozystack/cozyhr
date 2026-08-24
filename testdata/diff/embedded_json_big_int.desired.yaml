@@ -1,0 +1,12 @@
+# Source: monitoring/templates/grafana-datasources.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: monitoring-grafana-datasources
+  namespace: cozy-monitoring
+data:
+  datasource.json: |
+    {
+     "uid": "vmsingle",
+     "id": 9007199254740992
+    }
