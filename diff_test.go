@@ -9,9 +9,10 @@ import (
 // TestDiffManifests pins the noise-suppression behavior of diffManifests:
 // pairs of manifests that differ only in serialization details (Helm
 // "# Source:" comment headers, YAML block-scalar chomping style, long-line
-// folding, and embedded-JSON whitespace) must produce no diff output, while
-// a genuine value-level change must still be reported - even when it's
-// accompanied by the same cosmetic noise.
+// folding, and embedded-JSON whitespace) must produce no diff output at
+// all, while a genuine value-level change must still be reported - even
+// when it's accompanied by the same cosmetic noise, hidden behind an
+// embedded-JSON re-encoding, or disguised as almost-JSON.
 func TestDiffManifests(t *testing.T) {
 	tests := []struct {
 		name       string
@@ -23,6 +24,8 @@ func TestDiffManifests(t *testing.T) {
 		{name: "embedded_json", wantChange: false},
 		{name: "real_change", wantChange: true},
 		{name: "embedded_json_real_change", wantChange: true},
+		{name: "embedded_json_big_int", wantChange: true},
+		{name: "json_like_trailing_garbage", wantChange: true},
 	}
 
 	for _, tt := range tests {
@@ -35,9 +38,12 @@ func TestDiffManifests(t *testing.T) {
 				t.Fatalf("diffManifests: %v", err)
 			}
 
-			gotChange := strings.Contains(out, "has changed")
-			if gotChange != tt.wantChange {
-				t.Errorf("diffManifests(%s) reported change=%v, want %v; output:\n%s", tt.name, gotChange, tt.wantChange, out)
+			if tt.wantChange {
+				if !strings.Contains(out, "has changed") {
+					t.Errorf("diffManifests(%s) reported no change, want a change; output:\n%s", tt.name, out)
+				}
+			} else if out != "" {
+				t.Errorf("diffManifests(%s) produced output, want none; output:\n%s", tt.name, out)
 			}
 		})
 	}

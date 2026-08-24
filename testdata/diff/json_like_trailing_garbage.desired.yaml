@@ -1,0 +1,8 @@
+# Source: monitoring/templates/weird-payload.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: monitoring-weird-payload
+  namespace: cozy-monitoring
+data:
+  payload.txt: '{"a":1}] two'

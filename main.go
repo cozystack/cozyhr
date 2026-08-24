@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"path/filepath"
@@ -621,16 +622,27 @@ func canonicalizeSpecs(specs map[string]*manifest.MappingResult) {
 	}
 }
 
+// canonicalizeYAML re-serializes content, which may hold one or more
+// "---"-separated YAML documents, canonicalizing each document independently
+// so that no document beyond the first is silently dropped.
 func canonicalizeYAML(content string) string {
-	var obj interface{}
-	if err := yaml.Unmarshal([]byte(content), &obj); err != nil {
-		return content
+	dec := yaml.NewDecoder(strings.NewReader(content))
+	var docs []string
+	for {
+		var obj interface{}
+		if err := dec.Decode(&obj); err != nil {
+			if err == io.EOF {
+				break
+			}
+			return content
+		}
+		out, err := yaml.Marshal(canonicalizeYAMLValue(obj))
+		if err != nil {
+			return content
+		}
+		docs = append(docs, string(out))
 	}
-	out, err := yaml.Marshal(canonicalizeYAMLValue(obj))
-	if err != nil {
-		return content
-	}
-	return string(out)
+	return strings.Join(docs, "---\n")
 }
 
 func canonicalizeYAMLValue(v interface{}) interface{} {
@@ -652,34 +664,44 @@ func canonicalizeYAMLValue(v interface{}) interface{} {
 	}
 }
 
-// canonicalizeStringValue trims a trailing-newline-only difference (the
-// YAML block-scalar chomping indicator, "|" vs "|-", carries no other
-// information) and, if the trimmed string is itself a JSON document,
-// replaces it with a compact re-encoding so indentation-only differences
-// in embedded JSON (e.g. Grafana dashboards) don't show up as noise.
+// canonicalizeStringValue trims a single trailing newline (the sole
+// difference between the YAML block-scalar chomping indicators "|" and
+// "|-") and, if the trimmed string is itself a JSON document, replaces it
+// with a re-encoding using consistent whitespace so indentation-only
+// differences in embedded JSON (e.g. Grafana dashboards) don't show up as
+// noise. A "|+" (keep) scalar's extra trailing newlines are preserved.
 func canonicalizeStringValue(s string) string {
-	trimmed := strings.TrimRight(s, "\n")
+	trimmed := strings.TrimSuffix(s, "\n")
 	if canon, ok := canonicalizeJSONString(trimmed); ok {
 		return canon
 	}
 	return trimmed
 }
 
+// canonicalizeJSONString reports whether s is exactly one JSON document
+// (optionally surrounded by whitespace) and, if so, returns it re-encoded
+// with indentation so a genuine content difference still diffs line by
+// line rather than as one collapsed blob.
 func canonicalizeJSONString(s string) (string, bool) {
 	trimmed := strings.TrimSpace(s)
 	if len(trimmed) == 0 || (trimmed[0] != '{' && trimmed[0] != '[') {
 		return "", false
 	}
 	dec := json.NewDecoder(strings.NewReader(s))
+	dec.UseNumber() // preserve integers wider than float64's 53-bit mantissa
 	var v interface{}
 	if err := dec.Decode(&v); err != nil {
 		return "", false
 	}
 	// Reject trailing content after the JSON value: not a pure-JSON string.
-	if dec.More() {
+	// dec.More() only detects another well-formed JSON value, so decode
+	// again instead - that fails on any leftover bytes, well-formed or not,
+	// and succeeds only on io.EOF.
+	var trailing interface{}
+	if err := dec.Decode(&trailing); err != io.EOF {
 		return "", false
 	}
-	out, err := json.Marshal(v)
+	out, err := json.MarshalIndent(v, "", "  ")
 	if err != nil {
 		return "", false
 	}
