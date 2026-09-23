@@ -1284,8 +1284,8 @@ func markSuccess(ctx context.Context, cl client.Client, rec record.EventRecorder
 	}
 	msg := fmt.Sprintf("Helm upgrade succeeded for %s/%s with chart %s@%s", hr.Namespace, hr.Name, chartName, chartVer)
 
-	conditions.MarkTrue(hr, v2.ReleasedCondition, v2.UpgradeSucceededReason, msg)
-	conditions.MarkTrue(hr, fluxmeta.ReadyCondition, v2.UpgradeSucceededReason, msg)
+	conditions.MarkTrue(hr, v2.ReleasedCondition, v2.UpgradeSucceededReason, "%s", msg)
+	conditions.MarkTrue(hr, fluxmeta.ReadyCondition, v2.UpgradeSucceededReason, "%s", msg)
 
 	// Prepend to history - Flux's History.Latest() returns the first element
 	hr.Status.History = append(v2.Snapshots{newHistoryEntry(hr, chartName, chartVer, cfgDigest)}, hr.Status.History...)
@@ -1301,8 +1301,8 @@ func markSuccess(ctx context.Context, cl client.Client, rec record.EventRecorder
 func markFailure(ctx context.Context, cl client.Client, rec record.EventRecorder, hr *v2.HelmRelease, err error) {
 	msg := fmt.Sprintf("Helm upgrade failed for %s/%s: %s", hr.Namespace, hr.Name, err.Error())
 
-	conditions.MarkFalse(hr, v2.ReleasedCondition, v2.UpgradeFailedReason, err.Error())
-	conditions.MarkFalse(hr, fluxmeta.ReadyCondition, v2.UpgradeFailedReason, err.Error())
+	conditions.MarkFalse(hr, v2.ReleasedCondition, v2.UpgradeFailedReason, "%s", err.Error())
+	conditions.MarkFalse(hr, fluxmeta.ReadyCondition, v2.UpgradeFailedReason, "%s", err.Error())
 
 	hr.Status.Failures++
 	hr.Status.ObservedGeneration = hr.Generation
